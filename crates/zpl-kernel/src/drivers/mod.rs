@@ -20,6 +20,11 @@ pub mod serial;
 /// items stay gated on `v04_menu` within the module.
 pub mod kbd;
 
+/// USB keyboard through an xHCI controller, for machines with no i8042. The report
+/// translation and the xHCI data layouts build everywhere and are tested on the host;
+/// the controller driver itself is bare-metal only.
+pub mod usb;
+
 // The module works on both boot paths: `vga_buffer_base` already falls back to
 // the bare identity-mapped 0xB8000 when there is no HHDM offset, which is the
 // `-kernel` case. It used to be gated out of `qemu_boot` builds to keep that

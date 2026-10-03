@@ -780,6 +780,33 @@ pub fn ticks() -> u32 {
 }
 
 // ---------------------------------------------------------------------------
+// Which inputs are live
+// ---------------------------------------------------------------------------
+
+/// The line that says which inputs the prompt is reading.
+///
+/// A machine with a PS/2 controller and no USB keyboard gets exactly the line it always
+/// got. The others say what is missing, so a photograph of a prompt that will not type
+/// carries the reason.
+#[must_use]
+pub fn input_line(ps2: bool, usb: bool, com1: bool) -> &'static [u8] {
+    match (ps2, usb, com1) {
+        (true, false, true) => b"[ZPL-KBD] input=ps2+com1",
+        (true, false, false) => b"[ZPL-KBD] input=ps2 (no serial port on this machine)",
+        (true, true, true) => b"[ZPL-KBD] input=ps2+usb+com1",
+        (true, true, false) => b"[ZPL-KBD] input=ps2+usb (no serial port on this machine)",
+        (false, true, true) => b"[ZPL-KBD] input=usb+com1 (no PS/2 controller)",
+        (false, true, false) => b"[ZPL-KBD] input=usb (no PS/2 controller, no serial port)",
+        (false, false, true) => {
+            b"[ZPL-KBD] input=com1 (no PS/2 controller, no USB keyboard)"
+        }
+        (false, false, false) => {
+            b"[ZPL-KBD] input=none (no PS/2 controller, no USB keyboard, no serial port)"
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -816,6 +843,16 @@ pub mod kernel {
     /// re-enters it.
     static mut EDITOR: LineEditor = LineEditor::new();
     static mut DECODER: Decoder = Decoder::new();
+    /// The USB keyboard's own decoder. Its bytes are the same scancodes, but a key
+    /// held on one keyboard must not shift the letters typed on the other, and a
+    /// `0xE0` prefix from one must not swallow the next byte of the other.
+    static mut USB_DECODER: Decoder = Decoder::new();
+    /// Whether the machine has an i8042 at all, decided once in `banner`. Without
+    /// one, the status port reads `0xFF` -- "byte waiting, from the mouse" -- so every
+    /// read would be dropped anyway; skipping them saves the port traffic.
+    static mut PS2_PRESENT: bool = true;
+    /// Whether a USB keyboard was brought up in `banner`.
+    static mut USB_ACTIVE: bool = false;
     /// Consecutive bytes taken from COM1 without giving the keyboard a turn. Same single
     /// reader, same reason it is not a lock.
     static mut COM1_RUN: u32 = 0;
@@ -871,11 +908,18 @@ pub mod kernel {
         // reader is in play, so a photograph of a stuck prompt answers the question
         // instead of raising it. Printed after `halt loop entered`, so the boot-marker
         // sequence the determinism gate hashes is untouched.
-        if crate::drivers::serial::com1_present() {
-            out.line(b"[ZPL-KBD] input=ps2+com1");
-        } else {
-            out.line(b"[ZPL-KBD] input=ps2 (no serial port on this machine)");
+        //
+        // The USB keyboard is looked for here, after the boot, so whatever it prints
+        // stays out of the boot-marker sequence too. On a machine with no xHCI it
+        // prints nothing and the line below is the one this always printed.
+        let ps2 = crate::drivers::kbd::controller_present();
+        let usb = crate::drivers::usb::init(ps2, &mut |line| out.line(line));
+        // SAFETY: single reader, as above; nothing reads these before the banner.
+        unsafe {
+            *core::ptr::addr_of_mut!(PS2_PRESENT) = ps2;
+            *core::ptr::addr_of_mut!(USB_ACTIVE) = usb;
         }
+        out.line(super::input_line(ps2, usb, crate::drivers::serial::com1_present()));
         out.line(b"zpl-sh. type help for the list of commands.");
         out.put(PROMPT);
     }
@@ -915,10 +959,24 @@ pub mod kernel {
         }
         *since_keyboard = 0;
         // SAFETY: single reader, as above.
-        let decoder = unsafe { &mut *core::ptr::addr_of_mut!(DECODER) };
-        while let Some(code) = crate::drivers::kbd::poll_scancode() {
-            if let Some(ch) = decoder.feed(code) {
-                return Some(ch);
+        let (ps2, usb) =
+            unsafe { (*core::ptr::addr_of!(PS2_PRESENT), *core::ptr::addr_of!(USB_ACTIVE)) };
+        if ps2 {
+            // SAFETY: single reader, as above.
+            let decoder = unsafe { &mut *core::ptr::addr_of_mut!(DECODER) };
+            while let Some(code) = crate::drivers::kbd::poll_scancode() {
+                if let Some(ch) = decoder.feed(code) {
+                    return Some(ch);
+                }
+            }
+        }
+        if usb {
+            // SAFETY: single reader, as above.
+            let decoder = unsafe { &mut *core::ptr::addr_of_mut!(USB_DECODER) };
+            while let Some(code) = crate::drivers::usb::poll_scancode() {
+                if let Some(ch) = decoder.feed(code) {
+                    return Some(ch);
+                }
             }
         }
         None
@@ -1358,6 +1416,30 @@ mod tests {
     }
 
     // -- answers -----------------------------------------------------------
+
+    #[test]
+    fn a_machine_with_ps2_and_no_usb_keyboard_gets_the_line_it_always_got() {
+        assert_eq!(input_line(true, false, true), b"[ZPL-KBD] input=ps2+com1");
+        assert_eq!(
+            input_line(true, false, false),
+            b"[ZPL-KBD] input=ps2 (no serial port on this machine)"
+        );
+    }
+
+    #[test]
+    fn every_input_combination_names_what_it_reads() {
+        for ps2 in [false, true] {
+            for usb in [false, true] {
+                for com1 in [false, true] {
+                    let line = input_line(ps2, usb, com1);
+                    let has = |w: &[u8]| line.windows(w.len()).any(|x| x == w);
+                    assert!(line.starts_with(b"[ZPL-KBD] input="));
+                    assert_eq!(has(b"usb+") || line.ends_with(b"usb") || has(b"usb ("), usb);
+                    assert_eq!(has(b"ps2"), ps2);
+                }
+            }
+        }
+    }
 
     #[test]
     fn version_says_the_same_version_as_the_rest_of_the_kernel() {

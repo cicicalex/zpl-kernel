@@ -59,10 +59,28 @@ jobs:
       - name: Boot it, and check what it said
         run: bash scripts/ci-boot-check.sh boot.log
 
+      - name: Build the kernel with the command line
+        run: >
+          cargo -Zbuild-std=core,compiler_builtins,alloc
+          -Zbuild-std-features=compiler-builtins-mem -Zjson-target-spec
+          build -p zpl-kernel-bin --features shell --target-dir target/shell
+          --target crates/zpl-kernel/x86_64-zpl-kernel.json --release
+
+      - name: Type on the prompt, over PS/2 and over USB
+        run: bash scripts/usb-kbd-test.sh
+
       - name: Keep the boot log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: boot-log
           path: boot.log
+          if-no-files-found: warn
+
+      - name: Keep the keyboard test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: usb-kbd-test-logs
+          path: target/usb-kbd-test/*.log
           if-no-files-found: warn

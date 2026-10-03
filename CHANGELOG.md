@@ -7,7 +7,19 @@ released version.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **USB keyboard for machines with no PS/2 controller.** A minimal xHCI driver
+  (`crates/zpl-kernel/src/drivers/usb/`): finds the controller on PCI, takes it from
+  the firmware, enumerates one boot keyboard on a root port, and reads its reports by
+  polling, with no interrupts. The reports become the same set-1 scancodes the PS/2
+  path produces, so the command line decodes both the same way. Used when the machine
+  has no i8042, and in addition to it when the firmware is not holding the xHCI; a
+  machine with no xHCI behaves exactly as before.
+- **`scripts/usb-kbd-test.sh`**, run in CI: boots the command line in QEMU on a PS/2
+  machine, on a q35 machine with `i8042=off` and a USB keyboard (high and full
+  speed), and on one with both, types `version` through the QEMU monitor, and checks
+  the answer.
 
 ## [0.5.0] — first public source release
 

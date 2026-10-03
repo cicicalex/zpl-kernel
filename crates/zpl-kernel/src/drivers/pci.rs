@@ -168,6 +168,68 @@ pub const COMMAND_BUS_MASTER: u32 = 1 << 2;
 /// Command bit 1: the device answers memory cycles at its memory BARs.
 pub const COMMAND_MEMORY_SPACE: u32 = 1 << 1;
 
+/// The base of BAR0 when it is a memory BAR, joining BAR1 in when BAR0 says it is
+/// 64-bit wide (bits 2:1 = `10`). `bar1` is only looked at in that case.
+#[must_use]
+pub fn memory_bar0_base(bar0: u32, bar1: u32) -> Option<u64> {
+    if bar0 & 1 != 0 {
+        return None; // an I/O BAR
+    }
+    let low = u64::from(bar0 & 0xFFFF_FFF0);
+    let base = if bar0 & 0b110 == 0b100 {
+        low | (u64::from(bar1) << 32)
+    } else {
+        low
+    };
+    (base != 0).then_some(base)
+}
+
+/// Read BAR0 (and BAR1 with it, for a 64-bit BAR) and return the memory base.
+///
+/// # Safety
+/// Ring 0 on a machine with the legacy configuration ports; reads only.
+#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+// Its one caller, the USB keyboard driver, is built only with the prompt.
+#[cfg_attr(not(feature = "shell"), allow(dead_code))]
+pub(crate) unsafe fn read_memory_bar0(dev: &PciDevice) -> Option<u64> {
+    // SAFETY: the caller's contract; offset 0x14 is BAR1 in a type-0 header, and is
+    // only used when BAR0 says the two belong together.
+    let bar1 = unsafe { pci_read32(dev.bus, dev.device, dev.function, 0x14) };
+    memory_bar0_base(dev.bar0_raw, bar1)
+}
+
+/// Let a device answer at its memory BARs and start its own DMA.
+///
+/// Read-modify-write of the command register: every bit the firmware set stays, and
+/// only memory-space decoding and bus mastering are forced on.
+///
+/// # Safety
+/// `dev` must be a device found by [`scan`], and the caller must be its driver: a
+/// device with bus mastering on may write anywhere in memory it has been pointed at.
+#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+// Its one caller, the USB keyboard driver, is built only with the prompt.
+#[cfg_attr(not(feature = "shell"), allow(dead_code))]
+pub(crate) unsafe fn enable_memory_and_bus_master(dev: &PciDevice) {
+    // SAFETY: the caller's contract; offset 0x04 is the command register.
+    unsafe {
+        let cmd = pci_read32(dev.bus, dev.device, dev.function, REG_COMMAND);
+        pci_write32(
+            dev.bus,
+            dev.device,
+            dev.function,
+            REG_COMMAND,
+            cmd | COMMAND_MEMORY_SPACE | COMMAND_BUS_MASTER,
+        );
+    }
+}
+
+/// True for a USB xHCI controller: class 0x0C (serial bus), subclass 0x03 (USB),
+/// programming interface 0x30 (xHCI).
+#[must_use]
+pub fn is_xhci(dev: &PciDevice) -> bool {
+    dev.class == 0x0C && dev.subclass == 0x03 && dev.prog_if == 0x30
+}
+
 /// A short human name for a class/subclass pair.
 ///
 /// Deliberately small: the pairs QEMU presents on its default machines plus the
@@ -357,6 +419,29 @@ mod tests {
         assert_eq!(class_name(0x0C, 0x03, 0x30), b"USB xHCI");
         assert_eq!(class_name(0x0C, 0x03, 0x20), b"USB EHCI");
         assert_eq!(class_name(0x0C, 0x03, 0x00), b"USB UHCI");
+    }
+
+    #[test]
+    fn a_64_bit_bar_joins_its_upper_half() {
+        // Memory, 64-bit (bits 2:1 = 10), prefetchable.
+        assert_eq!(memory_bar0_base(0xFEB0_000C, 0x0000_0001), Some(0x1_FEB0_0000));
+        // 32-bit: BAR1 belongs to something else and is ignored.
+        assert_eq!(memory_bar0_base(0xFEB0_0000, 0xDEAD_BEEF), Some(0xFEB0_0000));
+        // I/O, and unset.
+        assert_eq!(memory_bar0_base(0x0000_C001, 0), None);
+        assert_eq!(memory_bar0_base(0x0000_0004, 0), None);
+    }
+
+    #[test]
+    fn only_the_xhci_programming_interface_is_xhci() {
+        let mut d = PciDevice {
+            bus: 0, device: 4, function: 0, vendor: 0x1B36, device_id: 0x000D,
+            class: 0x0C, subclass: 0x03, prog_if: 0x30, header_type: 0x00,
+            bar0_raw: 0xFEB0_0004, interrupt_line: 0xFF,
+        };
+        assert!(is_xhci(&d));
+        d.prog_if = 0x20; // EHCI
+        assert!(!is_xhci(&d));
     }
 
     #[test]
