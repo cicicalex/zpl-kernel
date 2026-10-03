@@ -28,25 +28,29 @@
 //!   bounds-checked and safe to call; the `unsafe` stays inside.
 //! - `xhci`: the controller and the keyboard, built on those two. Its only `unsafe` is
 //!   handing it a device: mapping the BAR and switching on bus mastering.
-//! - this file: the one place the keyboard is kept, see [`init`].
+//! - this file: the one place the keyboard is kept, see `init`.
+//!
+//! The controller driver is compiled only with the `shell` feature, because the
+//! command line is the only thing that reads it; a build without the prompt carries
+//! none of it.
 //!
 //! # Safety
 //!
 //! The keyboard lives in a `static mut`, the same way the shell keeps its line editor:
 //! exactly one reader exists, the halt loop on the bootstrap CPU, and nothing re-enters
-//! it. [`init`] and [`poll_scancode`] are only called from there.
+//! it. `init` and [`poll_scancode`] are only called from there.
 
 pub mod hid;
 pub mod trb;
 
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 mod dma;
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 mod mmio;
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 mod xhci;
 
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 static mut KEYBOARD: Option<xhci::Keyboard> = None;
 
 /// A short name for a port speed, for the report line.
@@ -69,7 +73,7 @@ pub fn speed_name(speed: u8) -> &'static [u8] {
 /// read.
 ///
 /// Call once, from the halt loop, before the first [`poll_scancode`].
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 pub fn init(ps2_present: bool, say: &mut dyn FnMut(&[u8])) -> bool {
     use crate::drivers::console::MarkerLine;
 
@@ -122,7 +126,7 @@ pub fn init(ps2_present: bool, say: &mut dyn FnMut(&[u8])) -> bool {
     false
 }
 
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 fn push_bdf(line: &mut crate::drivers::console::MarkerLine, dev: &crate::drivers::pci::PciDevice) {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let hex2 = |v: u8| [HEX[usize::from(v >> 4)], HEX[usize::from(v & 0xF)]];
@@ -135,14 +139,14 @@ fn push_bdf(line: &mut crate::drivers::console::MarkerLine, dev: &crate::drivers
 
 /// The next set-1 scancode from the USB keyboard, if one is up and has sent anything.
 /// Never blocks.
-#[cfg(all(target_os = "none", target_arch = "x86_64"))]
+#[cfg(all(target_os = "none", target_arch = "x86_64", feature = "shell"))]
 pub fn poll_scancode() -> Option<u8> {
     // SAFETY: the single reader, see the module header.
     let kbd = unsafe { &mut *core::ptr::addr_of_mut!(KEYBOARD) };
     kbd.as_mut()?.scancode()
 }
 
-#[cfg(not(all(target_os = "none", target_arch = "x86_64")))]
+#[cfg(not(all(target_os = "none", target_arch = "x86_64", feature = "shell")))]
 pub fn poll_scancode() -> Option<u8> {
     None
 }

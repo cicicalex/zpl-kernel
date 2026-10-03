@@ -189,6 +189,8 @@ pub fn memory_bar0_base(bar0: u32, bar1: u32) -> Option<u64> {
 /// # Safety
 /// Ring 0 on a machine with the legacy configuration ports; reads only.
 #[cfg(all(target_os = "none", target_arch = "x86_64"))]
+// Its one caller, the USB keyboard driver, is built only with the prompt.
+#[cfg_attr(not(feature = "shell"), allow(dead_code))]
 pub(crate) unsafe fn read_memory_bar0(dev: &PciDevice) -> Option<u64> {
     // SAFETY: the caller's contract; offset 0x14 is BAR1 in a type-0 header, and is
     // only used when BAR0 says the two belong together.
@@ -205,6 +207,8 @@ pub(crate) unsafe fn read_memory_bar0(dev: &PciDevice) -> Option<u64> {
 /// `dev` must be a device found by [`scan`], and the caller must be its driver: a
 /// device with bus mastering on may write anywhere in memory it has been pointed at.
 #[cfg(all(target_os = "none", target_arch = "x86_64"))]
+// Its one caller, the USB keyboard driver, is built only with the prompt.
+#[cfg_attr(not(feature = "shell"), allow(dead_code))]
 pub(crate) unsafe fn enable_memory_and_bus_master(dev: &PciDevice) {
     // SAFETY: the caller's contract; offset 0x04 is the command register.
     unsafe {
