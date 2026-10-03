@@ -1,0 +1,66 @@
+name: diag-iso
+
+# Builds the hardware diagnostic ISO and publishes it as an artifact, to be downloaded
+# from the Actions page and written to a USB stick. Runs on the `diag-fier` branch only.
+on:
+  push:
+    branches: [diag-fier]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  diag-iso:
+    name: build the diagnostic ISO, boot it in QEMU (BIOS and UEFI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        run: |
+          rustup toolchain install nightly --component rust-src,clippy
+          rustup default nightly
+          rustc --version
+
+      - name: Install xorriso, QEMU and OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xorriso qemu-system-x86 ovmf
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: diag-cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build the diagnostic ISO
+        run: bash scripts/build-diag-iso.sh
+
+      # Uploaded before the QEMU runs, so a failure there still leaves an image to look at.
+      - name: Upload the ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: zpl-diag-iso
+          path: |
+            artifacts/iso/zpl-diag.iso
+            artifacts/iso/zpl-diag.iso.sha256
+          if-no-files-found: error
+
+      - name: Boot it in QEMU, legacy BIOS
+        run: bash scripts/diag-qemu.sh bios artifacts/diag-qemu
+
+      - name: Boot it in QEMU, UEFI (OVMF)
+        run: bash scripts/diag-qemu.sh uefi artifacts/diag-qemu
+
+      - name: Keep the serial logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zpl-diag-qemu
+          path: artifacts/diag-qemu/
+          if-no-files-found: warn

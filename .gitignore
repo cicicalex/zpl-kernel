@@ -34,3 +34,6 @@ AGENTS_LUNA1.md
 # staging a whole directory; it is a build artefact of whatever interpreter ran.
 __pycache__/
 *.pyc
+
+# Serial logs and screenshots from scripts/diag-qemu.sh.
+artifacts/diag-qemu/

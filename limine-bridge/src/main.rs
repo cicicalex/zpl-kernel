@@ -9,5 +9,9 @@
 #[cfg(all(target_arch = "x86_64", target_os = "none"))]
 mod baremetal;
 
+/// The hardware diagnostic image's entry (`--features hw_diag`).
+#[cfg(all(target_arch = "x86_64", target_os = "none", feature = "hw_diag"))]
+mod diag;
+
 #[cfg(not(all(target_arch = "x86_64", target_os = "none")))]
 fn main() {}

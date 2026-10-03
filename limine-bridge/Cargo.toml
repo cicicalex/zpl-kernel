@@ -9,6 +9,11 @@ authors.workspace = true
 name = "limine-bridge"
 path = "src/main.rs"
 
+[features]
+# Build the hardware diagnostic image instead of the kernel: see `src/diag.rs`. Only the
+# diagnostic ISO workflow turns this on.
+hw_diag = ["zpl-kernel/hw_diag"]
+
 [dependencies]
 
 [target.'cfg(all(target_arch = "x86_64", target_os = "none"))'.dependencies]
