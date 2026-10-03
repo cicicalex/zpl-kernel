@@ -241,9 +241,34 @@ pub fn self_check() -> Result<(), SelfCheckErr> {
 mod tests {
     use super::*;
 
+    /// The table is one static, and the test harness runs tests on several threads at
+    /// once. Without this, one test's `init` could wipe the other's files halfway
+    /// through, and `list` would count a file the other test had just created -- which
+    /// it did, about one run in three. Every test that touches the table holds this.
+    static TABLE: AtomicBool = AtomicBool::new(false);
+
+    struct Held;
+
+    impl Drop for Held {
+        fn drop(&mut self) {
+            TABLE.store(false, Ordering::Release);
+        }
+    }
+
+    fn hold_table() -> Held {
+        while TABLE
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            core::hint::spin_loop();
+        }
+        Held
+    }
+
     #[test]
     fn list_reports_what_was_created_and_nothing_else() {
-        // SAFETY: a host test, single-threaded in its use of the table.
+        let _table = hold_table();
+        // SAFETY: a host test, and `hold_table` makes it the only user of the table.
         unsafe { init() };
         let a = open(b"/a.bin").expect("open a");
         write(a, b"12345").expect("write a");
@@ -267,6 +292,7 @@ mod tests {
 
     #[test]
     fn list_stops_at_the_end_of_a_short_buffer() {
+        let _table = hold_table();
         // SAFETY: as above.
         unsafe { init() };
         for i in 0..4u8 {
