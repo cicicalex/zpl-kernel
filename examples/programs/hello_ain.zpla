@@ -1,0 +1,17 @@
+; hello.zpla — first program built by zpl-asm v0.1
+; Calls SYS_LOG to print "hi" then SYS_EXIT(0).
+
+org 0x40010000
+entry _start
+
+_start:
+    mov rax, 0
+    mov rdi, str
+    mov rsi, 2
+    int 0x80
+    mov rax, 4
+    mov rdi, 0
+    int 0x80
+
+str:
+    db "hi"

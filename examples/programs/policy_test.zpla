@@ -1,0 +1,20 @@
+; policy_test.zpla — exercise SYS_LOG then SYS_EXIT.
+; In v0.2 (pending kernel-side `zpl_compute`) this program will additionally
+; call SYS_COMPUTE with a high-bias input and observe a kernel DEGRADE
+; decision; for v0.1 it just emits a marker so the ELF loader path is
+; exercised end-to-end.
+
+org 0x40010000
+entry _start
+
+_start:
+    mov rax, 0
+    mov rdi, msg
+    mov rsi, 11
+    int 0x80
+    mov rax, 4
+    mov rdi, 0
+    int 0x80
+
+msg:
+    db "POLICY test"

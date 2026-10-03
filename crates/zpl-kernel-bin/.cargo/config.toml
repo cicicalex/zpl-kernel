@@ -1,0 +1,8 @@
+[unstable]
+build-std = ["core", "compiler_builtins", "alloc"]
+build-std-features = ["compiler-builtins-mem"]
+
+[build]
+target = "../zpl-kernel/x86_64-zpl-kernel.json"
+
+# Workspace root `.cargo/config.toml` supplies `-Tcrates/zpl-kernel/linker.ld`.

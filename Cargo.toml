@@ -1,0 +1,59 @@
+# Paths must not travel in the binary.
+#
+# A `panic!` in a Rust library records the file it came from, and with `-Zbuild-std`
+# the standard library is compiled here -- so the file it records is the one on the
+# machine that built it. Two such strings reached every ISO built before this:
+#
+#   <home>/.rustup/toolchains/nightly-.../library/alloc/src/raw_vec/mod.rs
+#   <home>/.rustup/toolchains/nightly-.../library/alloc/src/alloc.rs
+#
+# A published image would have carried the account name and the layout of the machine
+# that built it. Neither gate caught it: the ISO gate looks for engine symbols, and the
+# the source-text scan reads source files -- this was a string inside a compiled
+# binary, which is neither.
+#
+# `trim-paths = "all"` rewrites them at compile time. Chosen over a list of
+# `--remap-path-prefix` entries because those take the literal prefix to rewrite, which
+# would mean writing this machine's account name into a file that is published -- the
+# same leak in a new place.
+cargo-features = ["trim-paths"]
+
+[workspace]
+members = [
+  "crates/audit-replay",
+  "crates/zpl-asm",
+  "crates/zpl-fs",
+  "crates/zpl-mkfs",
+  "crates/zpl-kernel",
+  "crates/zpl-kernel-bin",
+  "crates/zpl-test-runner",
+  "limine-bridge",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+authors = ["Ciciu Alexandru-Costinel"]
+
+[workspace.dependencies]
+limine = "0.6.3"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[workspace.lints.clippy]
+all = "deny"
+# One lint out of `pedantic`, with its threshold in `clippy.toml`. From here on a
+# function longer than that fails the build; the handful that are longer today each
+# carry an `#[allow]` with the reason written next to it, so the exceptions are a
+# list a reviewer can read rather than a silence.
+too_many_lines = "deny"
+
+[profile.release]
+trim-paths = "all"
+
+[profile.dev]
+trim-paths = "all"

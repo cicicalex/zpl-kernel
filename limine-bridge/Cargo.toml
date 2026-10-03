@@ -1,0 +1,19 @@
+[package]
+name = "limine-bridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "limine-bridge"
+path = "src/main.rs"
+
+[dependencies]
+
+[target.'cfg(all(target_arch = "x86_64", target_os = "none"))'.dependencies]
+# Limine: `paging::init` installs a leaf PTE for HHDM+0xB8000 (VGA text); safe to mirror markers and run `vga_visual_hold` on Apollo Lake HDMI.
+zpl-kernel = { path = "../crates/zpl-kernel", default-features = false, features = ["public", "vga_crit_mirror", "vga_visual_hold", "fb_crit_mirror", "v04_menu", "shell", "gate_panel_fb", "user_programs", "agent_debug_boot"] }
+limine = { workspace = true }
+[lints]
+workspace = true

@@ -1,0 +1,33 @@
+; attack.zpla — demo killer.
+;
+; Intent: invoke `zpl_compute` with a high-bias input so the kernel emits
+; `[ZPL-SCHED tid=X ain=12 BLOCK]` plus a signed Ed25519 audit chain
+; entry. Linux cannot do this without rewriting its scheduler / network
+; stack / syscall layer.
+;
+; v0.1 status: zpl-asm produces a valid ELF (proves the build path).
+; The runtime BLOCK trigger is gated on the live `zpl_compute`
+; implementation (planned for a follow-up — current syscall is a stub).
+; Until then the program calls the SYS_COMPUTE stub (which logs
+; `[ZPL-SYSCALL] stub num=1`) and exits.
+
+org 0x40010000
+entry _start
+
+_start:
+    mov rax, 1
+    mov rdi, input
+    mov rsi, 0
+    int 0x80
+    mov rax, 4
+    mov rdi, 0
+    int 0x80
+
+input:
+    ; Reserve 24 bytes for the future `ComputeInput` blob:
+    ; bias=0.95 (f64 little-endian), dimension=9 (u32), samples=64 (u32),
+    ; seed=0xA77AC4 (u64). Encoded as raw bytes here.
+    db 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0xEE, 0x3F
+    db 0x09, 0x00, 0x00, 0x00
+    db 0x40, 0x00, 0x00, 0x00
+    db 0xC4, 0x7A, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00

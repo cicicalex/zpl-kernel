@@ -1,0 +1,17 @@
+# The licence text must stay byte-for-byte the canonical GPL-3.0 file, because its
+# hash is how anyone checks it is the real thing. Without this, core.autocrlf=true
+# rewrites it on checkout and the hash no longer matches anything upstream.
+LICENSE -text
+
+# Git hooks are shell scripts, and Git for Windows runs them through `sh`. With
+# CRLF endings the shebang becomes `#!/usr/bin/env bash\r` and the hook fails
+# with "bad interpreter" -- on every commit, for whoever checked out with
+# core.autocrlf=true. Keeping them LF is what makes the hook work at all there.
+.githooks/* text eol=lf
+
+# The boot log in docs/media/ is evidence: it must stay byte-for-byte what the
+# kernel emitted, which is LF-only, or the sha256 printed beside it matches
+# nothing. The rule used to live in a `.gitattributes` next to the file, inside
+# the drafts directory -- which the export drops, so the published copy never got
+# it. Here it travels with the export, because this file does.
+docs/media/boot.log -text

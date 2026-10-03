@@ -1,0 +1,47 @@
+[package]
+name = "zpl-kernel-bin"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "zpl-kernel-bin"
+path = "src/main.rs"
+
+[dependencies]
+zpl-kernel = { path = "../zpl-kernel", default-features = false, features = ["qemu_boot"] }
+
+[features]
+# Forward the policy switch to `zpl-kernel`. Default
+# stays `engine` so today's behaviour is preserved unchanged; the
+# `public` build is opt-in via `--no-default-features --features
+# public`.
+default = ["public"]
+engine = ["zpl-kernel/engine"]
+# The public build mirrors its critical markers into the legacy VGA text buffer,
+# so `qemu-system-x86_64 -kernel ...` puts the boot on a screen instead of only on
+# the serial port. Somebody who clones this repository and runs the one command in
+# the README should see the kernel work, not a black rectangle.
+public = ["zpl-kernel/public", "zpl-kernel/vga_crit_mirror"]
+# The mirror on its own, for the engine build, which keeps its historical
+# serial-only behaviour by default.
+vga_crit_mirror = ["zpl-kernel/vga_crit_mirror"]
+# A key on COM1 sends an ARP request. Off by default: every automated run here
+# feeds COM1 from a file, and a kernel waiting on a port with no input side
+# would never reach the end of its boot.
+net_console = ["zpl-kernel/net_console"]
+panic_test = ["zpl-kernel/panic_test"]
+ring3_demo = ["zpl-kernel/ring3_demo"]
+elf_demo = ["zpl-kernel/elf_demo"]
+# The ring-3 round trip, proved on this boot path because it is the fast one.
+user_run_demo = ["zpl-kernel/user_run_demo"]
+# The prompt on the `-kernel` path, over COM1. This is where `load` and `run`
+# are proven, because it is where the ELF loader has always worked.
+shell = ["zpl-kernel/shell", "zpl-kernel/user_programs"]
+attack_demo = ["zpl-kernel/attack_demo", "zpl-kernel/elf_demo"]
+# v0.5 step 1: build the QEMU kernel with the behaviour translator instead of the
+# hand-written scheduler input. Opt-in, so every gate keeps measuring the v0.4 build.
+v05_translator = ["zpl-kernel/v05_translator"]
+[lints]
+workspace = true

@@ -1,0 +1,38 @@
+{
+  "keys": [
+    {
+      "provider": "deterministic-dev",
+      "algorithm": "sha256-dev-detached",
+      "key_id": "validation-dev-key",
+      "status": "Active"
+    },
+    {
+      "provider": "ed25519",
+      "algorithm": "ed25519-detached-v1",
+      "key_id": "lab-ed25519-001",
+      "status": "Revoked"
+    }
+  ],
+  "revoked_key_ids": [
+    "deprecated-key-2026-04"
+  ],
+  "rotation_log": [
+    {
+      "from_key_id": "lab-ed25519-000",
+      "to_key_id": "lab-ed25519-001",
+      "provider": "ed25519",
+      "algorithm": "ed25519-detached-v1",
+      "recorded_at_unix_s": 1776374400
+    }
+  ],
+  "attestation_log": [
+    {
+      "key_id": "lab-ed25519-001",
+      "attestor": "lab-attestor",
+      "evidence_uri": "urn:zpl:attestation:lab-ed25519-001",
+      "status": "Unverified",
+      "custody_tier": "Software",
+      "recorded_at_unix_s": 1776374400
+    }
+  ]
+}

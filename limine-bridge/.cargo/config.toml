@@ -1,0 +1,9 @@
+[unstable]
+build-std = ["core", "compiler_builtins", "alloc"]
+build-std-features = ["compiler-builtins-mem"]
+
+[build]
+# Dedicated bare-metal triple for Limine (higher-half VMA via root `.cargo/config.toml`
+# `[target.x86_64-zpl-limine]` + `limine-bridge/linker.ld`).
+# QEMU `-kernel` still uses `x86_64-zpl-kernel` + `crates/zpl-kernel/linker.ld` (zpl-kernel-bin).
+target = "x86_64-zpl-limine.json"

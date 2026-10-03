@@ -1,0 +1,18 @@
+; audit_dump.zpla — call the audit-read syscall stub then exit.
+; Acceptance: the kernel logs `[ZPL-SYSCALL] stub num=5` for the read_audit
+; call (per `docs/SYSCALL_ABI.md`), then `[ZPL-SYSCALL] exit code=0`.
+
+org 0x40010000
+entry _start
+
+_start:
+    mov rax, 5
+    mov rdi, buf
+    mov rsi, 16
+    int 0x80
+    mov rax, 4
+    mov rdi, 0
+    int 0x80
+
+buf:
+    db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

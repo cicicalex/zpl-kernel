@@ -1,0 +1,24 @@
+; bias_sweep.zpla — emit a sequence of "tick" markers and exit.
+; Demonstrates multiple SYS_LOG calls so the kernel observes a stream
+; of user log events instead of a single one.
+
+org 0x40010000
+entry _start
+
+_start:
+    mov rax, 0
+    mov rdi, msg_lo
+    mov rsi, 7
+    int 0x80
+    mov rax, 0
+    mov rdi, msg_hi
+    mov rsi, 7
+    int 0x80
+    mov rax, 4
+    mov rdi, 0
+    int 0x80
+
+msg_lo:
+    db "BIAS lo"
+msg_hi:
+    db "BIAS hi"

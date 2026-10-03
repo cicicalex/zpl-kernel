@@ -1,0 +1,8 @@
+# Synthetic "attack traffic" trace for zpl-firewall-cli.
+# Five port-scan-shaped packets from a single hostile peer.
+src_ip,dst_ip,src_port,dst_port,payload_len,unique_dst_ports,flag_anomaly_pct
+16909060,167772161,31337,22,64,64,95
+16909060,167772161,31337,23,64,64,93
+16909060,167772161,31337,80,80,64,91
+16909060,167772161,31337,3389,72,64,97
+16909060,167772161,31337,445,68,64,94

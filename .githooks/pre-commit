@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+# Fast checks before a commit is written. The slow gates live in
+# `scripts/build-all.ps1`; this is only what is cheap enough to run every time.
+#
+# This file is in the repository rather than in `.git/hooks`, so that it is
+# reviewed like any other code and everyone gets the same one. Git does not pick
+# it up on its own — each clone has to be told once:
+#
+#     git config core.hooksPath .githooks
+#
+# `CONTRIBUTING.md` says the same thing where someone will see it.
+set -euo pipefail
+
+echo "[pre-commit] cargo check --workspace"
+cargo check --workspace
+
+echo "[pre-commit] cargo clippy --workspace -- -D warnings"
+cargo clippy --workspace -- -D warnings
+
+# The kernel's own target, with warnings fatal.
+#
+# `clippy --workspace` above builds for the host and does NOT cover this target,
+# so a warning that exists only in the kernel build passes it silently. One did:
+# an unused static shipped in a commit and was found later by reading the
+# bare-metal output by hand. `scripts/build-all.ps1` has the same step, but that
+# runs far less often than a commit does.
+#
+# It is skipped when the toolchain cannot build the target at all — a
+# contributor on a machine without the nightly `build-std` support should still
+# be able to commit a documentation change, and `build-all` will catch what this
+# missed.
+#
+# The linker script is repeated here on purpose. A RUSTFLAGS environment
+# variable REPLACES `target.<triple>.rustflags` from `.cargo/config.toml`
+# instead of adding to it, so passing only "-D warnings" drops
+# `-Tcrates/zpl-kernel/linker.ld`: rust-lld then warns that it cannot find
+# `_start` and leaves a kernel in `target/` with a zero entry address, which
+# boots nothing. `build-all` now checks that entry address.
+BARE_METAL_RUSTFLAGS="-D warnings -C link-arg=-Tcrates/zpl-kernel/linker.ld"
+echo "[pre-commit] bare-metal build, warnings denied"
+if RUSTFLAGS="$BARE_METAL_RUSTFLAGS" cargo \
+      -Zbuild-std=core,compiler_builtins,alloc \
+      -Zbuild-std-features=compiler-builtins-mem \
+      -Zjson-target-spec \
+      build -p zpl-kernel-bin \
+      --target crates/zpl-kernel/x86_64-zpl-kernel.json \
+      --release 2>/dev/null
+then
+  echo "[pre-commit] bare-metal build clean"
+else
+  status=$?
+  # 101 is cargo's "the build failed" — that is a real failure and stops the
+  # commit. Anything else here means the target could not be attempted.
+  if [ "$status" -eq 101 ]; then
+    echo "[pre-commit] bare-metal build FAILED (warnings are errors here)" >&2
+    RUSTFLAGS="$BARE_METAL_RUSTFLAGS" cargo \
+      -Zbuild-std=core,compiler_builtins,alloc \
+      -Zbuild-std-features=compiler-builtins-mem \
+      -Zjson-target-spec \
+      build -p zpl-kernel-bin \
+      --target crates/zpl-kernel/x86_64-zpl-kernel.json \
+      --release >&2 || true
+    exit 1
+  fi
+  echo "[pre-commit] bare-metal target not buildable here (exit $status), skipped" >&2
+fi

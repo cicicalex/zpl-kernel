@@ -1,0 +1,39 @@
+# Positive control for scripts/cpuid-clobber-check.ps1.
+#
+# A verbatim window from llvm-objdump of the kernel binary as it shipped
+# BEFORE the 26 September 2026 CPUID fix. The 'movl %ebx, %ebx' at the
+# second site is the bug: the register allocator chose rbx for the output,
+# so the copy is a no-op and the following 'popq %rbx' discards the result.
+#
+# Kept because the bug cannot be reproduced by rebuilding the broken source:
+# a rebuild on 27 September allocated r10d/r11d instead and came out correct.
+# The only reliable positive control is the artifact that actually had it.
+#
+# Expected: scripts\cpuid-clobber-check.ps1 -Disassembly <this file> exits 1.
+
+
+0000000000106ac0 <_RNvNtCsf6lqMdkbE3c_10zpl_kernel4boot13run_smp_probe.llvm.3230998043731557637>:
+  106ac0:      	pushq	%rbp
+  106ac1:      	pushq	%r14
+  106ac3:      	pushq	%rbx
+  106ac4:      	xorl	%eax, %eax
+  106ac6:      	xorl	%ecx, %ecx
+  106ac8:      	pushq	%rbx
+  106ac9:      	cpuid
+  106acb:      	movl	%ebx, %esi
+  106acd:      	popq	%rbx
+  106ace:      	movl	%eax, %edi
+  106ad0:      	movl	$0x1, %eax
+  106ad5:      	xorl	%ecx, %ecx
+  106ad7:      	pushq	%rbx
+  106ad8:      	cpuid
+  106ada:      	movl	%ebx, %ebx
+  106adc:      	popq	%rbx
+  106add:      	testl	%edi, %edi
+  106adf:      	je	0x106e3f <_RNvNtCsf6lqMdkbE3c_10zpl_kernel4boot13run_smp_probe.llvm.3230998043731557637+0x37f>
+  106ae5:      	movl	%ebx, %ebp
+  106ae7:      	shrl	$0x10, %ebp
+  106aea:      	shrl	$0x18, %ebx
+  106aed:      	pushfq
+  106aee:      	popq	%r14
+  106af0:      	cli

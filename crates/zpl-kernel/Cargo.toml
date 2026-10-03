@@ -1,0 +1,90 @@
+[package]
+name = "zpl-kernel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+# Removed for the public export: cargo resolves a path dependency even when
+# the feature that selects it is off, so the path cannot survive the cut.
+
+[features]
+# Which policy the kernel links. `engine` is the default and uses the
+# project's own decision engine, which is not part of this repository.
+# `public` links the demo policy in `zpl_policy.rs` instead: three
+# readable rules behind the same ABI, so the kernel runs and the gate
+# can be watched working.
+default = ["public", "qemu_boot"]
+engine = []  # not selectable in the public export
+# Multiboot / `global_asm` bootstrap (`_zpl_qemu_boot`, identity page tables). Off for
+# `limine-bridge` (higher-half link): that path uses Limine paging + Rust stubs for `zpl_gdt` / `zpl_pdpt`.
+qemu_boot = []
+public = []
+# A key on COM1 sends an ARP request, instead of only sending one at boot.
+# Off by default and deliberately: every automated run feeds COM1 from a file,
+# which has no input side, and a kernel waiting for a keystroke there would
+# simply never finish. Turn it on for a demo with `-serial stdio`.
+net_console = []
+# Diagnostic only, for a test image: a live readout of the keyboard controller in the
+# panel -- status byte, how many scancodes have been read, and the last one. Reads the
+# status port, never the data port, so it cannot take a byte away from the shell.
+kbd_probe = []
+# Diagnostic only, for a test image: skip the PCI enumeration entirely. The firmware's
+# legacy USB keyboard emulation is a black box, and this is the cheapest way to ask
+# whether walking the bus is what stops it.
+skip_pci = []
+panic_test = []
+ring3_demo = []
+elf_demo = []
+# When `attack_demo` is on (alongside `elf_demo`), the embedded ELF is
+# `attack.elf` (PT_LOAD with `SYS_COMPUTE` + bias=0.95 input) instead of
+# the hello/log program. Runs through the same `elf_demo` orchestrator.
+attack_demo = ["elf_demo"]
+# Run the embedded ELF through `user_run::enter` and print the exit code it came
+# back with, instead of letting it stop the machine. The acceptance test for the
+# ring-3 round trip, on the boot path where iteration is fast.
+user_run_demo = ["elf_demo"]
+# `load <file>` and `run <file>` at the prompt: the ELF images and the ring-3
+# entry, WITHOUT the boot branch that runs a program automatically. That branch
+# ends the boot, which is the opposite of what a prompt wants.
+user_programs = []
+# Limine / higher-half: mirror `emit_critical_marker` to VGA text (0xB8000). Optional
+# because some QEMU+SeaBIOS+VBE CD-ROM setups stall on the text buffer; enable for
+# physical Apollo Lake / VGA bring-up, where the monitor shows a graphics mode
+# rather than the text buffer.
+vga_crit_mirror = []
+# After self-checks, keep refreshing VGA (and COM1) in the halt path so HDMI stays
+# active on some mini PCs (~500ms rdtsc-based delay between lines). Requires `vga_crit_mirror`.
+vga_visual_hold = ["vga_crit_mirror"]
+# v0.4: mirror `emit_critical_marker` into the *graphical* framebuffer Limine provides
+# (8x8 glyphs, see `fbcon.rs`). Independent of `vga_crit_mirror`: on real hardware Limine
+# starts a graphics mode, so the 0xB8000 text buffer is not what the monitor shows. Off in
+# `zpl-kernel-bin`, so the QEMU `-kernel` build is unchanged.
+fb_crit_mirror = []
+# v0.4 demo: polled PS/2 keyboard plus the three-key menu, driven from the halt loop
+# after the self-check sequence. Needs somewhere to draw, hence `fb_crit_mirror`.
+v04_menu = ["fb_crit_mirror"]
+# Draw the policy-gate panel on the graphical framebuffer as well as the VGA text
+# buffer. Separate from `fb_crit_mirror` because it also reserves the bottom rows for
+# the panel, which changes where ordinary output stops.
+gate_panel_fb = ["fb_crit_mirror"]
+# Task #10: `zpl-sh`, the kernel's command line, driven from the halt loop after the
+# self-check sequence. Reads COM1 and the PS/2 keyboard, writes wherever the console
+# mirrors. Needs somewhere to draw, hence `fb_crit_mirror`, same as the v0.4 menu.
+# No console is required: `boot::shell_echo` writes to COM1 always, and mirrors to
+# whichever of the two screens the build has. Requiring the framebuffer meant the
+# shell could only exist on the ISO path -- which is also the path where the ELF
+# loader has never been proven, so `load` and `run` had nowhere to be tested.
+shell = []
+# v0.5 step 1: replace the hand-written decision input with bits observed while the
+# kernel runs (see src/behavior.rs). Off by default, so `zpl-kernel-bin` and every
+# gate keep the v0.4 behaviour until the translator is explicitly asked for.
+v05_translator = []
+# COM1-only NDJSON boot breadcrumbs (session eadfc1); enable on ISO for serial capture → debug-eadfc1.log
+agent_debug_boot = []
+[lints]
+workspace = true

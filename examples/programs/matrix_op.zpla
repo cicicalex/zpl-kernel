@@ -1,0 +1,21 @@
+; matrix_op.zpla — exercise the bitwise ZPL operators reachable in v0.1
+; (XOR / AND / OR map directly to x86_64 reg-reg encodings) then issue a
+; SYS_LOG so the kernel logs a marker and the program exits cleanly.
+
+org 0x40010000
+entry _start
+
+_start:
+    xor eax, eax
+    or  eax, ecx
+    and eax, edx
+    mov rax, 0
+    mov rdi, msg
+    mov rsi, 6
+    int 0x80
+    mov rax, 4
+    mov rdi, 0
+    int 0x80
+
+msg:
+    db "MATRIX"

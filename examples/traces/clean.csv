@@ -1,0 +1,8 @@
+# Synthetic "clean traffic" trace for zpl-firewall-cli.
+# Columns: src_ip,dst_ip,src_port,dst_port,payload_len,unique_dst_ports,flag_anomaly_pct
+src_ip,dst_ip,src_port,dst_port,payload_len,unique_dst_ports,flag_anomaly_pct
+3232235781,167772161,50000,443,1400,1,5
+3232235781,167772161,50001,443,1392,1,4
+3232235781,167772161,50002,443,1500,1,3
+3232235781,167772161,50003,443,1400,1,5
+3232235781,167772161,50004,443,1280,1,6

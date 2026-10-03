@@ -1,0 +1,16 @@
+# Mixed-decision trace (sweeps the AIN band end-to-end so all three
+# states are visible in one fixture).
+#
+# Empirically (single-vCPU dev host, default policy thresholds):
+#   anomaly_pct in 0..25  -> ALLOW
+#   anomaly_pct in 25..55 -> DEGRADE
+#   anomaly_pct in 55..100 -> DROP
+src_ip,dst_ip,src_port,dst_port,payload_len,unique_dst_ports,flag_anomaly_pct
+3232235781,167772161,50000,443,1400,1,3
+3232235781,167772161,50001,443,1400,1,8
+3232235781,167772161,50002,443,1400,1,15
+3232235781,167772161,50003,443,1400,1,30
+3232235781,167772161,50004,443,1400,1,45
+3232235781,167772161,50005,443,1400,1,50
+16909060,167772161,31337,22,64,64,80
+16909060,167772161,31337,3389,72,64,95

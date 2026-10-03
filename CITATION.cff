@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: >-
+  If you use this kernel in academic or industrial work, please cite it
+  using the metadata below.
+title: "zero-point-kernel"
+abstract: >-
+  A small x86-64 research kernel written in Rust, no_std, that boots under
+  QEMU and on real hardware, and that runs every state-changing request
+  past a policy gate before carrying it out. Each decision is appended to
+  a linked log, which detects accidental corruption but is not
+  tamper-evident against a writer. The private policy engine is not
+  included; a demo policy is, so a build from this source runs and the
+  gate can be observed working. Contains the kernel (`zpl-kernel`), its
+  bare-metal binary (`zpl-kernel-bin`), a Limine bridge for booting from
+  an ISO (`limine-bridge`), a small assembler (`zpl-asm`), a filesystem
+  format and image tool (`zpl-fs` + `zpl-mkfs`), a log replay tool
+  (`audit-replay`), and a QEMU test runner (`zpl-test-runner`).
+type: software
+authors:
+  - family-names: Ciciu
+    given-names: Alexandru-Costinel
+    affiliation: Zero Point Logic
+    email: contact@zeropointlogic.io
+keywords:
+  - kernel
+  - operating-system
+  - rust
+  - no_std
+  - x86_64
+  - policy-enforcement
+  - audit-log
+  - qemu
+license: GPL-3.0-only
+version: 0.5.0
+date-released: 2026-10-03
+# Filled in when the repository is published; commented out until then.
+# url: "<repository url>"
+# repository-code: "<repository url>"

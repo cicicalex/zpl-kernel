@@ -1,0 +1,9 @@
+{
+  "require_verified_attestation": true,
+  "allowed_attestors": [
+    "lab-attestor"
+  ],
+  "required_evidence_uri_prefixes": [
+    "urn:zpl:attestation:"
+  ]
+}

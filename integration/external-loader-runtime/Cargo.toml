@@ -1,0 +1,16 @@
+[package]
+name = "zpl-external-loader-runtime"
+version = "0.1.0"
+edition = "2021"
+# The repository is GPL-3.0-only (see LICENSE). This crate said `Proprietary`,
+# which is three things disagreeing in one repository -- the same shape of
+# mistake the licence decision was taken to end. It is not a workspace member,
+# so it cannot inherit; the value is written out.
+license = "GPL-3.0-only"
+authors = ["Ciciu Alexandru-Costinel"]
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+zpl-kernel = { path = "../../crates/zpl-kernel" }

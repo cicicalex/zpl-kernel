@@ -1,0 +1,7 @@
+[build]
+target = "x86_64-zpl-kernel.json"
+
+[target.x86_64-zpl-kernel]
+rustflags = [
+  "-C", "link-arg=-Tlinker.ld"
+]

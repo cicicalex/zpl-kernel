@@ -1,0 +1,23 @@
+[unstable]
+json-target-spec = true
+
+# Paths must not travel in the binary -- see `trim-paths` in the workspace `Cargo.toml`.
+#
+# It is set there rather than here, as `--remap-path-prefix` entries, for a reason worth
+# writing down: `--remap-path-prefix` takes the literal prefix to rewrite, so using it
+# would mean putting this machine's account name and project path into this file -- a
+# file that is published. That is the same leak in a new place.
+#
+# NOTE for anyone adding a build script: setting the `RUSTFLAGS` *environment variable*
+# REPLACES the lists below rather than adding to them, which silently drops the linker
+# script. `scripts/build-all.ps1` learned that the hard way.
+
+[target.x86_64-zpl-kernel]
+rustflags = [
+  "-C", "link-arg=-Tcrates/zpl-kernel/linker.ld"
+]
+
+[target.x86_64-zpl-limine]
+rustflags = [
+  "-C", "link-arg=-Tlimine-bridge/linker.ld"
+]

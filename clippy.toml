@@ -1,0 +1,10 @@
+# Function length, checked rather than hoped for.
+#
+# 150 rather than clippy's default of 100: the default would fire on a dozen `match`
+# arms that are four lines each and read fine one after another, and a gate that fires
+# on readable code teaches people to silence it. 150 is where a function in this tree
+# stops fitting on a screen and starts needing a diagram.
+#
+# `too_many_lines` is in clippy's `pedantic` group, so it is opted into in
+# `Cargo.toml` rather than coming for free with `all = "deny"`.
+too-many-lines-threshold = 150
