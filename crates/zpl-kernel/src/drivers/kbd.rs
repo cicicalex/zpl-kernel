@@ -79,6 +79,22 @@ pub fn poll_menu_key() -> Option<MenuKey> {
     found
 }
 
+/// Whether the machine has an i8042 at all.
+///
+/// A port nothing answers reads as all ones, and a real controller never reports a
+/// status of `0xFF`: that would be "parity error, timeout, mouse byte waiting, input
+/// buffer full" all at once. Many UEFI-only machines have no controller, not even an
+/// emulated one, and this is how the shell finds out it has to look for a USB keyboard.
+///
+/// Reads the status port only, which consumes nothing.
+#[must_use]
+pub fn controller_present() -> bool {
+    // SAFETY: `0x64` is the i8042 status port; reading it has no side effect, and on a
+    // machine without the controller it reads as all ones.
+    let status = unsafe { inb(PS2_STATUS) };
+    status != 0xFF
+}
+
 // ---------------------------------------------------------------------------
 // Full scancode decoder, for the shell
 // ---------------------------------------------------------------------------

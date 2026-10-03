@@ -223,7 +223,10 @@ chain intact
 ```
 
 It reads the PS/2 keyboard and COM1, so it works with a screen and a keyboard or
-with a serial cable and nothing else. The commands:
+with a serial cable and nothing else. On a machine with no PS/2 controller at all,
+which is common on UEFI-only mini PCs, it looks for a USB keyboard on an xHCI
+controller instead (one boot keyboard on a root port, read by polling; no hubs).
+`scripts/usb-kbd-test.sh` types on the prompt in QEMU to check both. The commands:
 
 | | |
 |---|---|
