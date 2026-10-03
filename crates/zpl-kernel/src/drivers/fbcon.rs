@@ -221,6 +221,20 @@ static FONT8X8: [[u8; GLYPH_H]; (GLYPH_LAST - GLYPH_FIRST + 1) as usize] = [
     [0x3B, 0x6E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
 ];
 
+/// The 8x8 glyph for `ch`, for the hardware diagnostic's own scaled renderer.
+///
+/// The diagnostic draws its text two or three times larger than this console so a
+/// photograph of the screen stays readable, and borrows the font rather than carrying a
+/// second copy of it.
+#[cfg(feature = "hw_diag")]
+pub(crate) fn glyph_rows(ch: u8) -> Option<&'static [u8; GLYPH_H]> {
+    if (GLYPH_FIRST..=GLYPH_LAST).contains(&ch) {
+        Some(&FONT8X8[(ch - GLYPH_FIRST) as usize])
+    } else {
+        None
+    }
+}
+
 /// Packed `0x00RRGGBB`; converted to the framebuffer's own channel layout on write.
 pub const FB_WHITE: u32 = 0x00CC_CCCC;
 pub const FB_GREEN: u32 = 0x0000_CC00;

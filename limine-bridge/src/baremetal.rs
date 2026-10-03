@@ -28,18 +28,18 @@ use zpl_kernel::publish_external_boot_frame_v1;
 use zpl_kernel::start::zpl_boot_entry_v1;
 use zpl_kernel::ExternalBootFrameV1;
 
-static BASE_REVISION: BaseRevision = BaseRevision::new();
+pub(crate) static BASE_REVISION: BaseRevision = BaseRevision::new();
 
-static HHDM_REQUEST: HhdmRequest = HhdmRequest::new();
+pub(crate) static HHDM_REQUEST: HhdmRequest = HhdmRequest::new();
 
-static MEMMAP_REQUEST: MemmapRequest = MemmapRequest::new();
+pub(crate) static MEMMAP_REQUEST: MemmapRequest = MemmapRequest::new();
 
 static EXE_ADDRESS_REQUEST: ExecutableAddressRequest = ExecutableAddressRequest::new();
 
 /// v0.4: ask Limine for the graphical framebuffer so the kernel can draw text the monitor
 /// actually shows. Without this request the screen stays black on real hardware even
 /// though the kernel is alive on COM1 (observed 20 Sep 2026).
-static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
+pub(crate) static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 
 /// Paint one 16-character VGA text row at **HHDM + 0xB8000** (Limine-mapped text buffer).
 ///
@@ -189,6 +189,9 @@ fn build_external_frame(entries: &[Entry]) -> ExternalBootFrameV1 {
 }
 
 #[no_mangle]
+// With `hw_diag` the diagnostic takes over right after SSE and never returns, so the
+// rest of this function is unreachable in that build -- deliberately, and only there.
+#[cfg_attr(feature = "hw_diag", allow(unreachable_code))]
 pub extern "C" fn _start() -> ! {
     // SSE enable: required before ANY Rust code in release mode.
     //   - Rust auto-vectorizes copies with MOVAPS/MOVUPS (e.g. frame_alloc::self_check)
@@ -212,6 +215,11 @@ pub extern "C" fn _start() -> ! {
             options(nomem, nostack, preserves_flags),
         );
     }
+    // The diagnostic image stops here and never reaches the kernel. Right after SSE,
+    // because the diagnostic is ordinary Rust; before everything else, because
+    // everything else is what it is there to watch.
+    #[cfg(feature = "hw_diag")]
+    crate::diag::run();
     // Earliest COM1 bytes (no LSR wait): '$' = SSE configured, '@' = legacy path proof.
     //
     // These two stay as raw assembly on purpose, and are the only port writes in the
