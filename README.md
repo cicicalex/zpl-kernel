@@ -100,7 +100,7 @@ Needs a nightly Rust toolchain with `rust-src`, because the kernel builds the
 core library for its own target.
 
 ```bash
-rustup toolchain install nightly --component rust-src clippy
+rustup toolchain install nightly --component rust-src,clippy
 rustup default nightly
 
 cargo check --workspace

@@ -8,7 +8,7 @@ The kernel builds the core library for its own target, so it needs nightly with
 `rust-src`:
 
 ```bash
-rustup toolchain install nightly --component rust-src clippy
+rustup toolchain install nightly --component rust-src,clippy
 rustup default nightly
 ```
 
