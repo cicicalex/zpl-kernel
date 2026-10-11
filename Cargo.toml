@@ -12,6 +12,9 @@
 # the source-text scan reads source files -- this was a string inside a compiled
 # binary, which is neither.
 #
+# Now one does: `scripts/path-gate-check.sh`, in CI, scans the built ELFs and ISO and
+# proves it would have caught this one by rebuilding with trim-paths off.
+#
 # `trim-paths = "all"` rewrites them at compile time. Chosen over a list of
 # `--remap-path-prefix` entries because those take the literal prefix to rewrite, which
 # would mean writing this machine's account name into a file that is published -- the
