@@ -232,8 +232,30 @@ pub fn self_check() -> Result<(), SelfCheckErr> {
 mod tests {
     use super::*;
 
+    /// The process table is one static. The test harness runs tests on several threads at once, so without
+    /// this one test could change it halfway through another; it did, about one run
+    /// in fifty. Every test that touches it holds this for its whole body.
+    static GLOBAL: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
+
+    struct Held;
+
+    impl Drop for Held {
+        fn drop(&mut self) {
+            GLOBAL.store(false, core::sync::atomic::Ordering::Release);
+        }
+    }
+
+    fn hold_global() -> Held {
+        use core::sync::atomic::Ordering;
+        while GLOBAL.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed).is_err() {
+            core::hint::spin_loop();
+        }
+        Held
+    }
+
     #[test]
     fn snapshot_reports_running_and_zombie_but_not_free_slots() {
+        let _global = hold_global();
         // SAFETY: a host test, single-threaded within this test binary's use of the
         // table; `init` is what the boot path calls for the same reason.
         unsafe { init() };
@@ -253,6 +275,7 @@ mod tests {
 
     #[test]
     fn snapshot_stops_at_the_end_of_a_short_buffer() {
+        let _global = hold_global();
         // SAFETY: as above.
         unsafe { init() };
         for _ in 0..4 {

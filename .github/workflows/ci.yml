@@ -53,6 +53,17 @@ jobs:
           sudo apt-get install -y llvm
           llvm-objdump -f target/x86_64-zpl-kernel/release/zpl-kernel-bin
 
+      - name: Build the ISO, the way it is published
+        run: |
+          sudo apt-get install -y xorriso
+          bash scripts/build-iso.sh
+
+      - name: Path gate, with the proof it can fail
+        run: bash scripts/path-gate-check.sh
+
+      - name: Reproducible build, two clean builds compared
+        run: bash scripts/repro-check.sh
+
       - name: Install QEMU
         run: sudo apt-get install -y qemu-system-x86
 

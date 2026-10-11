@@ -118,11 +118,33 @@ pub fn pa_to_kernel_va(pa: u64) -> u64 {
 mod tests {
     use super::*;
 
+    /// The HHDM and kernel-image offsets are process-wide globals. The test harness runs tests on several threads at once, so without
+    /// this one test could change it halfway through another; it did, about one run
+    /// in fifty. Every test that touches it holds this for its whole body.
+    static GLOBAL: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
+
+    struct Held;
+
+    impl Drop for Held {
+        fn drop(&mut self) {
+            GLOBAL.store(false, core::sync::atomic::Ordering::Release);
+        }
+    }
+
+    fn hold_global() -> Held {
+        use core::sync::atomic::Ordering;
+        while GLOBAL.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed).is_err() {
+            core::hint::spin_loop();
+        }
+        Held
+    }
+
     /// The three cases in one test on purpose: they all move the same global, and
     /// `cargo test` runs test functions in parallel, so three of them setting and
     /// clearing it would interfere with each other and with the two above.
     #[test]
     fn pa_to_kernel_va_covers_both_worlds() {
+        let _global = hold_global();
         reset_hhdm_identity();
         assert_eq!(pa_to_kernel_va(0x1000), 0x1000, "no window: identity");
         assert_eq!(pa_to_kernel_va(0), 0);
@@ -140,12 +162,14 @@ mod tests {
 
     #[test]
     fn va_to_pa_identity_when_disabled() {
+        let _global = hold_global();
         reset_hhdm_identity();
         assert_eq!(va_to_pa(0x1234_5678_abcd_eff0), 0x1234_5678_abcd_eff0);
     }
 
     #[test]
     fn va_to_pa_with_hhdm_offset_works() {
+        let _global = hold_global();
         reset_hhdm_identity();
         let off = 0xffff_8000_0000_0000u64;
         set_hhdm_offset(off);
@@ -158,6 +182,7 @@ mod tests {
 
     #[test]
     fn va_to_pa_hhdm_saturates_below_offset() {
+        let _global = hold_global();
         reset_hhdm_identity();
         set_hhdm_offset(0xffff_ff00_0000_0000);
         assert_eq!(va_to_pa(0x1000), 0);
@@ -166,6 +191,7 @@ mod tests {
 
     #[test]
     fn kernel_va_to_pa_identity_when_unset() {
+        let _global = hold_global();
         set_kernel_image_offset(0, 0);
         assert_eq!(
             kernel_va_to_pa(0xffff_ffff_8012_4000),
@@ -175,6 +201,7 @@ mod tests {
 
     #[test]
     fn kernel_va_to_pa_limine_style() {
+        let _global = hold_global();
         let virt_base = 0xffff_ffff_8010_0000u64;
         let phys_base = 0xfe9_2000u64;
         set_kernel_image_offset(virt_base, phys_base);
