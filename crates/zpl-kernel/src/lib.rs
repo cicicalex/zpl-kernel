@@ -115,6 +115,18 @@ pub mod ui;
 /// Programs the kernel runs to show the gate working. Not part of the kernel proper.
 pub mod demo;
 pub mod loader_stage;
+/// Hardware diagnostic for a test image: what the machine does at boot, on one screen.
+/// Only its decoders are compiled on a host, for their tests.
+#[cfg(any(
+    test,
+    all(
+        feature = "hw_diag",
+        target_os = "none",
+        target_arch = "x86_64",
+        not(feature = "qemu_boot")
+    )
+))]
+pub mod diag;
 pub mod bridge;
 pub mod kernel;
 #[cfg(target_os = "none")]

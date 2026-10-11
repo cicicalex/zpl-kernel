@@ -37,6 +37,11 @@ kbd_probe = []
 # legacy USB keyboard emulation is a black box, and this is the cheapest way to ask
 # whether walking the bus is what stops it.
 skip_pci = []
+# Diagnostic only, for a test image that never enters the kernel: numbered boot steps,
+# boot mode, memory map, ACPI's 8042 flag, the i8042's state, the USB controllers on
+# PCI, and a live count of what arrives on port 0x60 -- on screen in large print and on
+# COM1. See `src/diag/mod.rs`. Needs the framebuffer console for its font.
+hw_diag = ["fb_crit_mirror"]
 panic_test = []
 ring3_demo = []
 elf_demo = []
