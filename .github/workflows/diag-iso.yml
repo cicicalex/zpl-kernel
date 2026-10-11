@@ -41,6 +41,14 @@ jobs:
       - name: Build the diagnostic ISO
         run: bash scripts/build-diag-iso.sh
 
+      # Before anything is uploaded: the image must carry no path, account name, e-mail
+      # address or credential from the machine that built it.
+      - name: Scan the image bytes for leaks
+        run: >
+          bash scripts/diag-leak-scan.sh
+          artifacts/iso/zpl-diag.iso
+          target/x86_64-zpl-limine/release/limine-bridge
+
       # Uploaded before the QEMU runs, so a failure there still leaves an image to look at.
       - name: Upload the ISO
         uses: actions/upload-artifact@v4
