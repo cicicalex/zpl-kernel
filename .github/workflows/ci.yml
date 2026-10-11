@@ -70,10 +70,23 @@ jobs:
       - name: Boot it, and check what it said
         run: bash scripts/ci-boot-check.sh boot.log
 
+      - name: Boot the ISO, BIOS and UEFI, and fail on any self-check FAIL
+        run: |
+          bash scripts/iso-boot-check.sh --self-test
+          bash scripts/iso-boot-check.sh
+
       - name: Keep the boot log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: boot-log
           path: boot.log
+          if-no-files-found: warn
+
+      - name: Keep the ISO boot logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iso-boot-logs
+          path: target/iso-boot-check/*.log
           if-no-files-found: warn

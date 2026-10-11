@@ -200,12 +200,29 @@ pub fn capacity_frames() -> u64 {
 /// Frames marked in use by [`reserve_unusable`] rather than by an allocation.
 static RESERVED_FRAMES: AtomicU64 = AtomicU64::new(0);
 
+/// How many frames [`reserve_unusable`] marked in use because the firmware's memory
+/// map does not call them usable.
+pub fn reserved_frames() -> u64 {
+    RESERVED_FRAMES.load(Ordering::Relaxed)
+}
+
 pub fn used_frames() -> u64 {
     let mut total = 0u64;
     for word in BITMAP.iter() {
         total += word.load(Ordering::Relaxed).count_ones() as u64;
     }
     total
+}
+
+/// Frames taken by [`alloc_frame`] and not yet freed: the bits in use, less the ones
+/// [`reserve_unusable`] set because the memory map keeps those frames from us.
+///
+/// [`used_frames`] counts both, which is what the bitmap holds; a leak check has to
+/// count only the first. Using `used_frames` for it made the boot self-check fail on
+/// every machine with a memory map -- every ISO boot -- by reporting each reserved
+/// frame as leaked.
+pub fn allocated_frames() -> u64 {
+    used_frames().saturating_sub(reserved_frames())
 }
 
 /// Outcome of `self_check` so the caller can emit precise diagnostic markers.
@@ -246,16 +263,16 @@ pub fn self_check() -> Result<SelfCheckOk, SelfCheckErr> {
             None => return Err(SelfCheckErr::BurstAllocFailed { at: i as u32 }),
         }
     }
-    if used_frames() != 1000 {
-        return Err(SelfCheckErr::LeakAfterBurst { used: used_frames() });
+    if allocated_frames() != 1000 {
+        return Err(SelfCheckErr::LeakAfterBurst { used: allocated_frames() });
     }
     for (i, slot) in frames.iter().enumerate() {
         if free_frame(*slot).is_err() {
             return Err(SelfCheckErr::BurstFreeFailed { at: i as u32 });
         }
     }
-    if used_frames() != 0 {
-        return Err(SelfCheckErr::LeakAfterBurst { used: used_frames() });
+    if allocated_frames() != 0 {
+        return Err(SelfCheckErr::LeakAfterBurst { used: allocated_frames() });
     }
 
     let stress_iterations: u32 = 1_000_000;
@@ -268,8 +285,8 @@ pub fn self_check() -> Result<SelfCheckOk, SelfCheckErr> {
             return Err(SelfCheckErr::StressFreeFailed { at: i });
         }
     }
-    if used_frames() != 0 {
-        return Err(SelfCheckErr::LeakAfterStress { used: used_frames() });
+    if allocated_frames() != 0 {
+        return Err(SelfCheckErr::LeakAfterStress { used: allocated_frames() });
     }
 
     Ok(SelfCheckOk {
@@ -358,6 +375,26 @@ mod memory_map_tests {
             let inside = (phys >= lo.0 && phys < lo.1) || (phys >= hi.0 && phys < hi.1);
             assert!(inside, "handed out {phys:#x}, inside the reserved hole");
         }
+
+        // --- 4. The boot self-check passes on a machine with a memory map. --------
+        //
+        // It failed on every boot from an ISO: it counted the frames the map reserves
+        // as frames its own test had leaked, so "1000 allocated" came out as 1000 plus
+        // every reserved frame. A machine whose map covered the whole window (QEMU with
+        // 2 GiB) passed, which is how the cause was pinned down.
+        declare_usable(&[lo, hi]);
+        let reserved_before = {
+            init(BASE_PHYS_DEFAULT);
+            reserved_frames()
+        };
+        assert!(reserved_before > 0, "the map leaves frames reserved");
+        assert_eq!(
+            self_check(),
+            Ok(SelfCheckOk { burst_alloc: 1000, burst_free: 1000, stress_iterations: 1_000_000 }),
+            "reserved frames are not a leak"
+        );
+        assert_eq!(reserved_frames(), reserved_before, "and they are still reserved after it");
+        assert_eq!(usable_frames(), 8 * mib / FRAME_SIZE, "and nothing is left allocated");
 
         // Leave the global state as the other tests expect to find it.
         declare_usable(&[]);

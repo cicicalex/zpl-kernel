@@ -35,6 +35,7 @@ order:
 | `[ZPL-FRAME] init base=0x00200000 cap=N` | `frame_alloc` | Bitmap allocator initialised at 2 MiB physical. `N` is how many frames this machine actually offers, after the firmware memory map is applied, so it differs between machines and between QEMU `-m` sizes. On a boot path with no memory map (the `-kernel` build) it is the whole bitmap, 262144. |
 | `[ZPL-FRAME] burst alloc=1000 free=1000 leak=0` | same | 1 000 alloc/free round-trip. |
 | `[ZPL-FRAME] stress=1000000 leak=0` | same | 1 M iterations of grow/shrink. |
+| `[ZPL-FRAME] selfcheck FAIL`, then `[ZPL-FRAME] selfcheck detail <check> used=N\|at=N reserved=R` | same | Printed instead of the two lines above when a check fails. The detail line names which of the six checks failed, its number, and how many frames the memory map reserved. The leak checks count only frames the self-check itself took, never the reserved ones. |
 | `[ZPL-HEAP] selfcheck box+vec100 OK` | `heap::self_check` | `Box::new(0xCAFE_BABE)` + 100-element `Vec` round-trip. |
 | `[ZPL-AUDIT] selfcheck append=5 verify=ok tamper_detected OK` | `audit_chain::self_check` | 5 records, chain re-hash matches, tampered byte detected. |
 | `[ZPL-SMP max_leaf=N max_logical=M apic_id=X OK]` | `smp::probe` | CPUID 0x00 + CPUID 0x01 read; QEMU 1-vCPU reports `max_leaf=13 max_logical=0 apic_id=0`. This row described the intended values; until the CPUID fix of 26 Sep 2026 the kernel actually printed `max_logical=17/18 apic_id=128`, a stale register rather than hardware (`V04_TEST_RECORD.md` §2.2). It now prints what this row says. |

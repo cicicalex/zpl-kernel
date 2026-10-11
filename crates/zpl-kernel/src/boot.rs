@@ -1479,10 +1479,38 @@ fn run_frame_alloc_self_check() {
             emit_critical_marker(MARKER_BURST_OK);
             emit_critical_marker(MARKER_STRESS_OK);
         }
-        Err(_) => {
+        Err(e) => {
             emit_critical_marker(MARKER_FAIL);
+            emit_critical_marker(frame_self_check_failure_line(e).as_slice());
         }
     }
+}
+
+/// Which check failed and with what numbers, on a line of its own after the FAIL.
+///
+/// The FAIL line alone said only that something in the allocator's self-check was
+/// wrong. On the ISO path it said so on every boot for a long time, and finding out
+/// which of six checks it was meant rebuilding with a probe. Now the log says.
+fn frame_self_check_failure_line(
+    e: crate::mm::frame_alloc::SelfCheckErr,
+) -> crate::drivers::console::MarkerLine {
+    use crate::mm::frame_alloc::SelfCheckErr;
+    let mut line = crate::drivers::console::MarkerLine::new();
+    line.push(b"[ZPL-FRAME] selfcheck detail ");
+    let (what, n): (&[u8], u64) = match e {
+        SelfCheckErr::BurstAllocFailed { at } => (b"burst_alloc_failed at=", u64::from(at)),
+        SelfCheckErr::BurstFreeFailed { at } => (b"burst_free_failed at=", u64::from(at)),
+        SelfCheckErr::LeakAfterBurst { used } => (b"leak_after_burst used=", used),
+        SelfCheckErr::StressAllocFailed { at } => (b"stress_alloc_failed at=", u64::from(at)),
+        SelfCheckErr::StressFreeFailed { at } => (b"stress_free_failed at=", u64::from(at)),
+        SelfCheckErr::LeakAfterStress { used } => (b"leak_after_stress used=", used),
+    };
+    line.push(what);
+    line.push_dec(n);
+    line.push(b" reserved=");
+    line.push_dec(crate::mm::frame_alloc::reserved_frames());
+    line.push(b"\n");
+    line
 }
 
 
