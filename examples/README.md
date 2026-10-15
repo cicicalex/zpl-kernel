@@ -48,17 +48,6 @@ cargo run -q -p zpl-firewall-cli -- examples/traces/attack.csv --audit-output ar
 cargo run -q -p audit-replay -- summary artifacts/audit/firewall-attack.json
 ```
 
-## `crates/pb-core/examples/` — research crate demos
-
-Lower-level reference implementations exercised by the existing
-`pb-core` test suite:
-
-| File | Purpose |
-|------|---------|
-| `zpl_policy_userspace_ref.rs` | Reference user-space mirror of the kernel `zpl_policy` decision boundary. |
-| `zpl_policy_bit_identical.rs` | Bit-identity proof between host and kernel. |
-| `audit_hash_diag.rs` | Audit-chain hash-mixer diagnostic. |
-
 ## See also
 
 - [`docs/MARKERS.md`](../docs/MARKERS.md) — every `[ZPL-...]` marker the kernel emits.

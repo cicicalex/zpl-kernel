@@ -28,7 +28,7 @@ Examples seen on the wire today:
 [ZPL-PAGING] write_read_match val=0xcafebabedeadbeef
 [ZPL-PAGING] unmap virt=0x40000000 ok
 [ZPL-PAGING] page_fault virt=0x40000000 reread ok
-[ZPL-SCHED tid=B ain=97 action=ALLOW]
+[ZPL-SCHED tid=B ain=50 action=ALLOW]
 [ZPL-PANIC] reason=test
 [ZPL-PANIC] file=... line=... col=...
 [ZPL-PANIC] rip=0x... rsp=0x... rflags=0x...

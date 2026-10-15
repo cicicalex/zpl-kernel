@@ -50,8 +50,8 @@ order:
 | `[ZPL-RAMFS] selfcheck create+write+close+reopen+read OK` | `ramfs::self_check` | RAM filesystem round-trip. |
 | `[ZPL-PROC] selfcheck spawn=3 wait=3 exit_codes_sum=43 live=0 OK` | `process::self_check` | In-kernel process table. |
 | `[ZPL-IPC] selfcheck pipe+send+recv ipc-roundtrip OK` | `ipc::self_check` | Ring-buffer pipes. |
-| `[ZPL-SHM] shm_id=0 ain=99 action=ALLOW` | `shm::self_check` | AIN-gated shared memory: clean write. |
-| `[ZPL-SHM] shm_id=0 ain=14 action=BLOCK` | same | AIN-gated shared memory: hostile write rejected. |
+| `[ZPL-SHM] shm_id=0 ain=50 action=ALLOW` | `shm::self_check` | AIN-gated shared memory: clean write. |
+| `[ZPL-SHM] shm_id=0 ain=5 action=BLOCK` | same | AIN-gated shared memory: hostile write rejected. |
 | `[ZPL-SHM] selfcheck allow_clean+block_hostile OK` | same | Final OK marker after both transitions. |
 | `[ZPL-MATRIX] selfcheck 8ops naive==simd 64x64 OK` | `matrix_ops::self_check` | All 8 operators agree between naive and `__m128i` paths. |
 | `[ZPL-RUNQ] selfcheck N=5 ticks=10 winner=task0_wins=10 OK` | `runqueue::self_check` | AIN-priority scheduler picks the right task across 10 ticks. |
@@ -107,7 +107,7 @@ stable).
 | Marker | Meaning |
 |--------|---------|
 | `[ZPL-ELF] demo entered` | Same as elf_demo path. |
-| `[ZPL-SCHED tid=user ain=15 action=BLOCK]` | The demo killer fires; AIN drops below the BLOCK threshold and the kernel refuses to commit. |
+| `[ZPL-SCHED tid=user ain=5 action=BLOCK]` | The demo killer fires; AIN drops below the BLOCK threshold and the kernel refuses to commit. |
 | `[ZPL-SYSCALL] exit code=0` | User program calls `SYS_EXIT(0)` after the BLOCK so the gate observes a graceful exit. |
 | `[ZPL-RING] qemu_exit=success` | Test gate happy (exit code 1 from `isa-debug-exit`). |
 

@@ -3,24 +3,13 @@
 ## Preconditions
 
 - Rust toolchain installed
-- Workspace at `c:\Dev\zpl-kernel-lab`
+- A checkout of this repository
 
 ## Steps
 
 1. `cargo check`
-2. `cargo run -p pb-cli -- compute --profile lab --bias 0.5 --dimension 9 --samples 1000 --json`
-3. `cargo run -p pb-sim -- --profile lab --scenario normal_load --out artifacts/sim/normal_load.json`
-4. `cargo run -p pb-sim -- --profile lab --scenario fault_input --anti-oscillation --guard-flip-threshold 3 --guard-window-size 6 --guard-cooldown-steps 2 --guard-cooldown-escalation-step 1 --guard-max-cooldown-steps 8 --guard-flip-decay 1 --out artifacts/sim/fault_input.json`
-5. `cargo run -p pb-bench -- --profile lab --scenario all --repeats 5 --out artifacts/bench/bench_all.json`
-6. `cargo run -p pb-integration -- --profile lab --tasks 20 --signer dev --signer-key-id validation-dev-key --out artifacts/sim/integration.json --inputs-out artifacts/sim/integration_inputs.json --audit-chain-out artifacts/sim/policy_chain.json --kernel-handoff-chain-out artifacts/sim/kernel_handoff_chain.json --consistency-out artifacts/sim/handoff_consistency.json`
-7. `cargo run -p pb-integration -- --profile lab --tasks 20 --signer dev --signer-key-id validation-dev-key --signing-registry-in config/signing-registry.example.json --out artifacts/sim/integration_registry.json`
-8. `cargo run -p pb-integration -- --profile lab --tasks 20 --signer dev --signer-key-id validation-dev-key --signing-registry-in config/signing-registry.example.json --signing-rotate-from validation-dev-key --signing-rotate-to validation-dev-key-v2 --signing-rotate-provider deterministic-dev --signing-rotate-algorithm sha256-dev-detached --signing-attest-key-id validation-dev-key-v2 --signing-attestor lab-attestor --signing-attestation-status unverified --signing-attestation-custody-tier software --signing-registry-out artifacts/sim/signing_registry_snapshot.json --out artifacts/sim/integration_registry_lifecycle.json`
-9. `cargo run -p pb-integration -- --profile lab --tasks 20 --signer hsm-placeholder --signer-hsm-key-ref local-hsm-ref --signing-registry-in config/signing-registry.example.json --hsm-trust-policy-in config/hsm-trust-policy.example.json --hsm-enforce-trust-policy --out artifacts/sim/integration_hsm_policy.json`
-10. `powershell -ExecutionPolicy Bypass -File scripts/finalize-hsm-policy-report.ps1`
-11. `cargo run -p pb-integration -- --profile lab --replay-max-mismatch-rate 0.0 --replay-policy-chain-in artifacts/sim/policy_chain.json --replay-kernel-chain-in artifacts/sim/kernel_handoff_chain.json --replay-inputs-in artifacts/sim/integration_inputs.json --replay-consistency-out artifacts/sim/replay_consistency.json`
-12. `powershell -ExecutionPolicy Bypass -File scripts/finalize-replay-trend-report.ps1`
-13. `cargo run -p pb-safety -- --profile lab --steps 30 --out artifacts/sim/safety.json`
-14. `cargo run -p pb-dashboard -- --profile lab --scenario burst_load`
+
+The lab validation steps use private tooling and are not part of the public export.
 
 ## Expected artifacts
 

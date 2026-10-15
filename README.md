@@ -216,7 +216,7 @@ zpl> mem
 heap  1496 of 262144 bytes
 frames 3 of 262144 used
 zpl> run hostile
-[ZPL-SH run=hostile ain=13 action=BLOCK] strongly skewed input: write refused
+[ZPL-SH run=hostile ain=5 action=BLOCK] strongly skewed input: write refused
 zpl> audit
 records 5
 chain intact
@@ -252,7 +252,7 @@ zpl> ls
   /attack.elf         173 bytes
 zpl> run /attack.elf
 /attack.elf: loaded, 1 segment at 0x40010000
-[ZPL-SCHED tid=user ain=6 action=BLOCK]
+[ZPL-SCHED tid=user ain=5 action=BLOCK]
 [ZPL-SYSCALL] exit code=0
 /attack.elf: exited with 0
 ```

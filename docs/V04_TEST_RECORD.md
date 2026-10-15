@@ -196,7 +196,7 @@ Run with nothing else running on the machine:
 | v0.4 unit tests | `cargo test -p zpl-kernel --features v04_menu` | **15 passed / 0 failed** |
 
 `build-all` contains 23 marker assertions; none fired. The hostile-workload gate reports
-`[ZPL-SCHED tid=user ain=15 action=BLOCK]`, and the replay gate rejects a tampered chain
+`[ZPL-SCHED tid=user ain=5 action=BLOCK]`, and the replay gate rejects a tampered chain
 with a non-zero exit and `[E_REPLAY_011_SELF_HASH] record 3 self_hash mismatch`.
 
 **The 29 tests do not cover v0.4.** `v04_menu` is not a default feature, so the ten new
@@ -249,8 +249,8 @@ Captures are in `docs/v04-ecran-*.png`, taken from a BIOS boot of the v0.4 ISO.
 
 - `v04-ecran-selfcheck.png` — 20 self-check lines, green for those ending in `OK`, plus
   the status block.
-- `v04-ecran-allow.png` — after key `1`: `[ZPL-V04 menu=1 ain=99 action=ALLOW]`, green.
-- `v04-ecran-block.png` — after key `2`: `[ZPL-V04 menu=2 ain=17 action=BLOCK]` in red,
+- After key `1`: an `[ZPL-V04 menu=1 ain=.. action=ALLOW]` line, green.
+- After key `2`: an `[ZPL-V04 menu=2 ain=.. action=BLOCK]` line in red,
   with the reason given in words only.
 - `v04-ecran-audit.png` — after key `3`: audit chain length and `verify=ok records=5`.
 
